@@ -1,5 +1,6 @@
 @import "tailwindcss";
 
+/* Light mode design tokens */
 :root {
   --background: #f8fafc;
   --foreground: #0f172a;
