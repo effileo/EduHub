@@ -32,6 +32,7 @@ export default function DashboardLayout({ children, roleRequired }: { children: 
 
   if (!user || user.role !== roleRequired) return null;
 
+  // Sidebar navigation links for the student role
   const studentLinks = [
     { name: "Dashboard", href: "/student", icon: LayoutDashboard },
     { name: "Attendance", href: "/student/attendance", icon: UserSquare2 },
