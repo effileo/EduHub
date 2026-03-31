@@ -19,7 +19,7 @@ export default function LecturerDashboard() {
         <p className="text-slate-500 mt-1">Manage your sessions, queues, and student evaluations.</p>
       </header>
 
-      {/* Quick Actions Bar */}
+      {/* Quick Actions Bar - primary lecturer shortcuts for managing sessions and alerts */}
       <div className="flex gap-4 mb-8 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
         <button className="flex-shrink-0 flex items-center px-4 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm">
           <PlusCircle size={18} className="mr-2" />
