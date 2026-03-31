@@ -22,6 +22,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
 
+  /** Authenticate user with the given role and set mock profile data */
   const login = (role: UserRole) => {
     setUser({
       id: role === "lecturer" ? "L-001" : "S-001",
