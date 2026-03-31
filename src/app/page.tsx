@@ -9,7 +9,7 @@ export default function Home() {
   const { user, login } = useAuth();
   const router = useRouter();
 
-  // If already logged in, redirect to correct dashboard
+  // Redirect authenticated users to their role-specific dashboard automatically
   useEffect(() => {
     if (user?.role === "student") router.push("/student");
     if (user?.role === "lecturer") router.push("/lecturer");
