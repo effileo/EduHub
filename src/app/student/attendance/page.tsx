@@ -40,7 +40,7 @@ export default function StudentAttendance() {
     
     setStatus("loading");
     
-    // Simulate network delay
+    // Simulate network request with 1.2s delay to mimic server-side validation
     setTimeout(() => {
       // Mock validation logic
       if (fullCode === "4912") {
