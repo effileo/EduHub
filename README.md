@@ -1,3 +1,7 @@
+# EduHub Connect
+
+An advanced academic management platform built for students and lecturers. Features include lab attendance tracking, office hours queue management, study group matching, and anonymous course evaluations.
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
