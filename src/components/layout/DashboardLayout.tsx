@@ -4,7 +4,6 @@ import { useAuth } from "@/lib/AuthContext";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { 
-  Bell, 
   LogOut, 
   Menu, 
   X, 
@@ -15,6 +14,7 @@ import {
   Star 
 } from "lucide-react";
 import Link from "next/link";
+import NotificationBell from "@/components/notifications/NotificationBell";
 
 export default function DashboardLayout({ children, roleRequired }: { children: React.ReactNode, roleRequired: "student" | "lecturer" }) {
   const { user, logout } = useAuth();
@@ -123,10 +123,7 @@ export default function DashboardLayout({ children, roleRequired }: { children: 
           <div className="flex-1" />
 
           <div className="flex items-center gap-4">
-            <button className="relative p-2 text-slate-400 hover:text-slate-500 transition-colors rounded-full hover:bg-slate-50">
-              <Bell size={20} />
-              <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white" />
-            </button>
+            <NotificationBell />
           </div>
         </header>
 
