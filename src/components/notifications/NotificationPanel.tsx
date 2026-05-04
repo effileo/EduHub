@@ -27,7 +27,7 @@ export default function NotificationPanel() {
   }, [])
 
   const filteredNotifications = notifications.filter(n => 
-    filter === 'all' ? true : !n.read
+    filter === 'all' ? true : !n.isRead
   )
 
   const groupedNotifications = filteredNotifications.reduce((acc: any, n: any) => {
@@ -97,27 +97,27 @@ export default function NotificationPanel() {
                   <div
                     key={n.id}
                     className={`group relative bg-white rounded-2xl p-5 border transition-all hover:shadow-md hover:border-indigo-200 flex items-start gap-4 ${
-                      n.read ? 'border-slate-100 opacity-80' : 'border-indigo-100 shadow-sm'
+                      n.isRead ? 'border-slate-100 opacity-80' : 'border-indigo-100 shadow-sm'
                     }`}
                   >
-                    {!n.read && (
+                    {!n.isRead && (
                       <span className="absolute left-[-1px] top-1/2 -translate-y-1/2 w-1.5 h-12 bg-indigo-500 rounded-r-full" />
                     )}
                     <div className={`p-3 rounded-xl shrink-0 ${
-                      n.read ? 'bg-slate-50 text-slate-400' : 'bg-indigo-50 text-indigo-600'
+                      n.isRead ? 'bg-slate-50 text-slate-400' : 'bg-indigo-50 text-indigo-600'
                     }`}>
                       <Bell size={24} />
                     </div>
                     <div className="flex-1">
                       <div className="flex justify-between items-start gap-4 mb-1">
-                        <h3 className={`font-bold leading-tight ${n.read ? 'text-slate-600' : 'text-slate-900 text-lg'}`}>
+                        <h3 className={`font-bold leading-tight ${n.isRead ? 'text-slate-600' : 'text-slate-900 text-lg'}`}>
                           {n.title}
                         </h3>
                         <span className="text-xs text-slate-400 whitespace-nowrap">
                           {format(new Date(n.createdAt), 'h:mm a')}
                         </span>
                       </div>
-                      <p className={`text-sm leading-relaxed ${n.read ? 'text-slate-500' : 'text-slate-600'}`}>
+                      <p className={`text-sm leading-relaxed ${n.isRead ? 'text-slate-500' : 'text-slate-600'}`}>
                         {n.body}
                       </p>
                       {n.link && (
@@ -130,7 +130,7 @@ export default function NotificationPanel() {
                         </a>
                       )}
                     </div>
-                    {!n.read && (
+                    {!n.isRead && (
                       <button className="opacity-0 group-hover:opacity-100 transition-opacity p-2 text-slate-400 hover:text-indigo-600">
                         <CheckCircle2 size={20} />
                       </button>

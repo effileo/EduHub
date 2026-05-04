@@ -21,19 +21,19 @@ export async function notify(userId: string, payload: {
 export async function markRead(notificationId: string) {
   await prisma.notification.update({
     where: { id: notificationId },
-    data: { read: true },
+    data: { isRead: true },
   })
 }
 
 export async function markAllRead(userId: string) {
   await prisma.notification.updateMany({
-    where: { userId, read: false },
-    data: { read: true },
+    where: { userId, isRead: false },
+    data: { isRead: true },
   })
 }
 
 export async function getUnreadCount(userId: string) {
   return await prisma.notification.count({
-    where: { userId, read: false },
+    where: { userId, isRead: false },
   })
 }

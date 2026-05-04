@@ -19,7 +19,7 @@ export default function NotificationBell() {
       const res = await fetch('/api/notifications?page=1')
       const data = await res.json()
       setNotifications(data)
-      setUnreadCount(data.filter((n: any) => !n.read).length)
+      setUnreadCount(data.filter((n: any) => !n.isRead).length)
     } catch (err) {
       console.error('Failed to fetch notifications', err)
     }
@@ -98,12 +98,12 @@ export default function NotificationBell() {
                   onClick={() => handleMarkRead(n.id, n.link)}
                   className="w-full p-4 flex gap-3 text-left hover:bg-indigo-50/50 transition-colors border-b border-slate-50 last:border-0 relative group"
                 >
-                  {!n.read && (
+                  {!n.isRead && (
                     <span className="absolute left-1 top-1/2 -translate-y-1/2 w-1 h-8 bg-indigo-500 rounded-full" />
                   )}
                   <div className="flex-1">
                     <div className="flex justify-between items-start gap-2 mb-1">
-                      <p className={`text-sm font-semibold ${n.read ? 'text-slate-600' : 'text-slate-900'}`}>
+                      <p className={`text-sm font-semibold ${n.isRead ? 'text-slate-600' : 'text-slate-900'}`}>
                         {n.title}
                       </p>
                       <span className="text-[10px] text-slate-400 whitespace-nowrap">
