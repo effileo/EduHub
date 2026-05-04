@@ -75,6 +75,7 @@ model OfficeHourQueue {
   topic           String
   status          QueueStatus @default(WAITING)
   meetingLink     String?
+  position        Int         @default(0)
   estimatedWait   Int?
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
