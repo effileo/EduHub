@@ -1,0 +1,268 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+}
+
+model User {
+  id                String              @id @default(cuid())
+  email             String              @unique
+  name              String
+  avatar            String?
+  role              Role                @default(STUDENT)
+  gpa               Float?
+  availabilitySlots Json?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  labSessions       LabSession[]
+  attendances       Attendance[]
+  officeHourQueues  OfficeHourQueue[]
+  studyGroupMemberships StudyGroupMember[]
+  evaluations       Evaluation[]
+  notifications     Notification[]
+  assignments       Assignment[]
+  submissions       Submission[]
+  threads           Thread[]
+  replies           Reply[]
+  resources         Resource[]
+  auditLogs         AuditLog[]
+  notificationPrefs NotificationPref[]
+}
+
+enum Role {
+  STUDENT
+  LECTURER
+  ADMIN
+}
+
+model LabSession {
+  id          String       @id @default(cuid())
+  code        String       @unique
+  courseId    String
+  lecturerId  String
+  active      Boolean      @default(true)
+  expiresAt   DateTime
+  lateThreshold Int        @default(15)
+  qrCode      String?
+  createdAt   DateTime     @default(now())
+  lecturer    User         @relation(fields: [lecturerId], references: [id])
+  attendances Attendance[]
+}
+
+model Attendance {
+  id           String     @id @default(cuid())
+  studentId    String
+  labSessionId String
+  status       AttendanceStatus @default(PRESENT)
+  createdAt    DateTime   @default(now())
+  student      User       @relation(fields: [studentId], references: [id])
+  labSession   LabSession @relation(fields: [labSessionId], references: [id])
+  @@unique([studentId, labSessionId])
+}
+
+enum AttendanceStatus {
+  PRESENT
+  LATE
+  ABSENT
+}
+
+model OfficeHourQueue {
+  id              String      @id @default(cuid())
+  lecturerId      String
+  studentId       String
+  topic           String
+  status          QueueStatus @default(WAITING)
+  meetingLink     String?
+  estimatedWait   Int?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  lecturer        User        @relation(fields: [lecturerId], references: [id])
+}
+
+enum QueueStatus {
+  WAITING
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+model StudyGroup {
+  id          String             @id @default(cuid())
+  courseId    String
+  title       String
+  tags        String[]
+  notes       String?
+  createdAt   DateTime           @default(now())
+  members     StudyGroupMember[]
+  messages    Message[]
+}
+
+model StudyGroupMember {
+  id           String     @id @default(cuid())
+  studyGroupId String
+  userId       String
+  joinedAt     DateTime   @default(now())
+  studyGroup   StudyGroup @relation(fields: [studyGroupId], references: [id])
+  user         User       @relation(fields: [userId], references: [id])
+  @@unique([studyGroupId, userId])
+}
+
+model Message {
+  id           String     @id @default(cuid())
+  studyGroupId String
+  authorId     String
+  body         String
+  createdAt    DateTime   @default(now())
+  studyGroup   StudyGroup @relation(fields: [studyGroupId], references: [id])
+}
+
+model Evaluation {
+  id               String   @id @default(cuid())
+  courseId         String
+  submissionToken  String   @unique
+  contentScore     Int
+  deliveryScore    Int
+  paceScore        Int
+  materialsScore   Int
+  supportScore     Int
+  feedback         String?
+  sentiment        String?
+  createdAt        DateTime @default(now())
+  submitterId      String?
+  submitter        User?    @relation(fields: [submitterId], references: [id])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  body      String
+  link      String?
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  user      User             @relation(fields: [userId], references: [id])
+}
+
+enum NotificationType {
+  ATTENDANCE_RISK
+  QUEUE_UPDATE
+  ASSIGNMENT_DUE
+  GRADE_POSTED
+  DISCUSSION_REPLY
+  STUDY_GROUP_INVITE
+  ANNOUNCEMENT
+  EVALUATION_OPEN
+}
+
+model NotificationPref {
+  id        String           @id @default(cuid())
+  userId    String
+  eventType NotificationType
+  push      Boolean          @default(true)
+  email     Boolean          @default(false)
+  inApp     Boolean          @default(true)
+  user      User             @relation(fields: [userId], references: [id])
+  @@unique([userId, eventType])
+}
+
+model Assignment {
+  id              String       @id @default(cuid())
+  courseId        String
+  lecturerId      String
+  title           String
+  description     String?
+  dueDate         DateTime
+  maxScore        Float
+  weight          Float
+  isPeerReviewed  Boolean      @default(false)
+  reviewsRequired Int          @default(2)
+  createdAt       DateTime     @default(now())
+  lecturer        User         @relation(fields: [lecturerId], references: [id])
+  submissions     Submission[]
+}
+
+model Submission {
+  id           String     @id @default(cuid())
+  assignmentId String
+  studentId    String
+  fileUrl      String?
+  score        Float?
+  feedback     String?
+  gradedAt     DateTime?
+  gradedBy     String?
+  createdAt    DateTime   @default(now())
+  assignment   Assignment @relation(fields: [assignmentId], references: [id])
+  student      User       @relation(fields: [studentId], references: [id])
+  @@unique([assignmentId, studentId])
+}
+
+model Thread {
+  id         String   @id @default(cuid())
+  courseId   String
+  authorId   String
+  title      String
+  body       String
+  isPinned   Boolean  @default(false)
+  isResolved Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  author     User     @relation(fields: [authorId], references: [id])
+  replies    Reply[]
+}
+
+model Reply {
+  id               String   @id @default(cuid())
+  threadId         String
+  authorId         String
+  body             String
+  isAcceptedAnswer Boolean  @default(false)
+  upvotes          Int      @default(0)
+  createdAt        DateTime @default(now())
+  thread           Thread   @relation(fields: [threadId], references: [id])
+  author           User     @relation(fields: [authorId], references: [id])
+}
+
+model Resource {
+  id         String   @id @default(cuid())
+  courseId   String
+  uploaderId String
+  title      String
+  fileUrl    String
+  fileType   String
+  version    Int      @default(1)
+  week       Int?
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+  uploader   User     @relation(fields: [uploaderId], references: [id])
+}
+
+model CourseSchedule {
+  id          String   @id @default(cuid())
+  courseId    String
+  dayOfWeek   Int
+  startTime   String
+  endTime     String
+  room        String?
+  isRecurring Boolean  @default(true)
+  startDate   DateTime
+}
+
+model Department {
+  id            String @id @default(cuid())
+  name          String
+  institutionId String
+  adminId       String
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  actorId     String
+  action      String
+  targetModel String
+  targetId    String
+  payload     Json?
+  createdAt   DateTime @default(now())
+  actor       User     @relation(fields: [actorId], references: [id])
+}

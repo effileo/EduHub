@@ -21,7 +21,7 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-indigo-50 via-white to-blue-50 relative overflow-hidden">
+    <main className="min-h-screen flex items-center justify-center p-4 bg-linear-to-br from-indigo-50 via-white to-blue-50 relative overflow-hidden">
       {/* Decorative blurred background shapes */}
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] max-w-md bg-indigo-500/20 rounded-full blur-[100px]" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] max-w-md bg-emerald-500/20 rounded-full blur-[100px]" />
@@ -29,7 +29,7 @@ export default function Home() {
       <div className="max-w-md w-full relative z-10">
         <div className="bg-white/70 backdrop-blur-xl rounded-3xl shadow-xl border border-white/40 p-10 mt-10">
           <div className="flex justify-center mb-6">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-600 to-blue-500 flex items-center justify-center shadow-lg text-white">
+            <div className="w-16 h-16 rounded-2xl bg-linear-to-tr from-indigo-600 to-blue-500 flex items-center justify-center shadow-lg text-white">
               <GraduationCap size={32} />
             </div>
           </div>

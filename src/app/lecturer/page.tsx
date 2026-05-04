@@ -21,15 +21,15 @@ export default function LecturerDashboard() {
 
       {/* Quick Actions Bar - primary lecturer shortcuts for managing sessions and alerts */}
       <div className="flex gap-4 mb-8 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
-        <button className="flex-shrink-0 flex items-center px-4 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm">
+        <button className="shrink-0 flex items-center px-4 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm">
           <PlusCircle size={18} className="mr-2" />
           New Lab Session
         </button>
-        <button className="flex-shrink-0 flex items-center px-4 py-2.5 rounded-lg bg-white border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50 transition-colors shadow-sm">
+        <button className="shrink-0 flex items-center px-4 py-2.5 rounded-lg bg-white border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50 transition-colors shadow-sm">
           <Users size={18} className="mr-2 text-indigo-600" />
           Open Office Hours
         </button>
-        <button className="flex-shrink-0 flex items-center px-4 py-2.5 rounded-lg bg-emerald-50 border border-emerald-100 text-emerald-700 text-sm font-medium hover:bg-emerald-100 transition-colors shadow-sm">
+        <button className="shrink-0 flex items-center px-4 py-2.5 rounded-lg bg-emerald-50 border border-emerald-100 text-emerald-700 text-sm font-medium hover:bg-emerald-100 transition-colors shadow-sm">
           <Mail size={18} className="mr-2" />
           Broadcast Alert
         </button>

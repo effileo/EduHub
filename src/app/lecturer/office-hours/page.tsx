@@ -54,7 +54,7 @@ export default function LecturerOfficeHours() {
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-indigo-600 to-blue-700 rounded-2xl shadow-md p-6 text-white text-center">
+        <div className="bg-linear-to-br from-indigo-600 to-blue-700 rounded-2xl shadow-md p-6 text-white text-center">
           <h3 className="font-semibold mb-2">Queue Analytics</h3>
           <div className="grid grid-cols-2 gap-4 mt-6">
             <div>

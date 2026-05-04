@@ -17,7 +17,7 @@ export default function StudentDashboard() {
       {/* High Priority Alerts */}
       <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-xl md:flex items-center justify-between mb-8 shadow-sm">
         <div className="flex items-start">
-          <BellRing className="text-red-500 mt-0.5 mr-3 flex-shrink-0" size={20} />
+          <BellRing className="text-red-500 mt-0.5 mr-3 shrink-0" size={20} />
           <div>
             <h3 className="text-red-800 font-semibold mb-1">Room Change: Data Structures (CS301)</h3>
             <p className="text-red-700 text-sm">Today&apos;s 2:00 PM lecture is moved to LT-3. Please arrive on time.</p>
@@ -76,7 +76,7 @@ export default function StudentDashboard() {
             <div className="space-y-3 mt-2">
               <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Live Now</p>
               <div className="flex items-center p-3 rounded-lg border border-slate-100 hover:border-slate-300 transition-colors cursor-pointer">
-                <div className="h-10 w-10 bg-slate-100 rounded-full flex-shrink-0 flex items-center justify-center text-slate-600 font-medium text-sm">
+                <div className="h-10 w-10 bg-slate-100 rounded-full shrink-0 flex items-center justify-center text-slate-600 font-medium text-sm">
                   JD
                 </div>
                 <div className="ml-3 flex-1">

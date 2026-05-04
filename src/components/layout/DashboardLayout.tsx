@@ -68,7 +68,7 @@ export default function DashboardLayout({ children, roleRequired }: { children: 
       {/* Sidebar */}
       <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-auto flex flex-col ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
         <div className="h-16 flex items-center justify-between px-6 border-b border-slate-100">
-          <span className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-blue-500 bg-clip-text text-transparent">EduHub</span>
+          <span className="text-xl font-bold bg-linear-to-r from-indigo-600 to-blue-500 bg-clip-text text-transparent">EduHub</span>
           <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-slate-500 hover:text-slate-700">
             <X size={20} />
           </button>
@@ -88,7 +88,7 @@ export default function DashboardLayout({ children, roleRequired }: { children: 
                     : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                 }`}
               >
-                <Icon size={20} className={`mr-3 flex-shrink-0 ${isActive ? "text-indigo-600" : "text-slate-400 group-hover:text-slate-500"}`} />
+                <Icon size={20} className={`mr-3 shrink-0 ${isActive ? "text-indigo-600" : "text-slate-400 group-hover:text-slate-500"}`} />
                 {link.name}
               </Link>
             )

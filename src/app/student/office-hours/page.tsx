@@ -101,7 +101,7 @@ export default function StudentOfficeHours() {
           </div>
 
           <div className="w-full mt-6 bg-indigo-50 p-4 rounded-xl border border-indigo-100 flex items-start text-left text-sm text-indigo-800">
-             <MessageSquare size={20} className="mr-3 mt-0.5 flex-shrink-0 text-indigo-500" />
+             <MessageSquare size={20} className="mr-3 mt-0.5 shrink-0 text-indigo-500" />
              <div>
                <strong>Topic submitted:</strong> {topic}
              </div>
