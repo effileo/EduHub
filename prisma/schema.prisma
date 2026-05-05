@@ -29,6 +29,7 @@ model User {
   resources         Resource[]
   auditLogs         AuditLog[]
   notificationPrefs NotificationPref[]
+  peerReviews       PeerReviewAssignment[]
 }
 
 enum Role {
@@ -197,7 +198,29 @@ model Submission {
   createdAt    DateTime   @default(now())
   assignment   Assignment @relation(fields: [assignmentId], references: [id])
   student      User       @relation(fields: [studentId], references: [id])
+  peerReviewAssignments PeerReviewAssignment[]
   @@unique([assignmentId, studentId])
+}
+
+model PeerReviewAssignment {
+  id           String   @id @default(cuid())
+  submissionId String
+  reviewerId   String
+  completed    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  submission   Submission @relation(fields: [submissionId], references: [id])
+  reviewer     User       @relation(fields: [reviewerId], references: [id])
+  review       PeerReview?
+  @@unique([submissionId, reviewerId])
+}
+
+model PeerReview {
+  id                   String              @id @default(cuid())
+  peerReviewAssignment PeerReviewAssignment @relation(fields: [assignmentId], references: [id])
+  assignmentId         String              @unique
+  rubricScores         Json
+  feedback             String
+  submittedAt          DateTime            @default(now())
 }
 
 model Thread {
