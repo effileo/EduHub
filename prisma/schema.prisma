@@ -30,6 +30,7 @@ model User {
   auditLogs         AuditLog[]
   notificationPrefs NotificationPref[]
   peerReviews       PeerReviewAssignment[]
+  enrollments       Enrollment[]
 }
 
 enum Role {
@@ -299,4 +300,23 @@ model AuditLog {
   payload     Json?
   createdAt   DateTime @default(now())
   actor       User     @relation(fields: [actorId], references: [id])
+}
+
+model Course {
+  id          String       @id
+  name        String
+  description String?
+  enrollments Enrollment[]
+  createdAt   DateTime     @default(now())
+}
+
+model Enrollment {
+  id        String   @id @default(cuid())
+  userId    String
+  courseId  String
+  role      Role     @default(STUDENT)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+  course    Course   @relation(fields: [courseId], references: [id])
+  @@unique([userId, courseId])
 }

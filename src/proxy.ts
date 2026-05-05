@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import prisma from '@/lib/prisma'
 
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -30,6 +31,13 @@ export async function proxy(request: NextRequest) {
   // Refreshing the auth token
   const { data: { user } } = await supabase.auth.getUser()
 
+  let dbUser = null
+  if (user) {
+    dbUser = await prisma.user.findUnique({
+      where: { id: user.id }
+    })
+  }
+
   const isAuthPage = request.nextUrl.pathname.startsWith('/login') || request.nextUrl.pathname.startsWith('/signup')
   const isProtectedPage = 
     request.nextUrl.pathname.startsWith('/dashboard') ||
@@ -44,6 +52,12 @@ export async function proxy(request: NextRequest) {
   if (!user && isProtectedPage) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
+    return NextResponse.redirect(url)
+  }
+
+  if (request.nextUrl.pathname.startsWith('/admin') && dbUser?.role !== 'ADMIN') {
+    const url = request.nextUrl.clone()
+    url.pathname = '/dashboard'
     return NextResponse.redirect(url)
   }
 
