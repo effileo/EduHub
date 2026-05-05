@@ -260,6 +260,16 @@ model Resource {
   sortOrder  Int      @default(0)
   createdAt  DateTime @default(now())
   uploader   User     @relation(fields: [uploaderId], references: [id])
+  embeddings ResourceEmbedding[]
+}
+
+model ResourceEmbedding {
+  id         String @id @default(cuid())
+  resourceId String
+  chunkIndex Int
+  chunkText  String
+  createdAt  DateTime @default(now())
+  resource   Resource @relation(fields: [resourceId], references: [id])
 }
 
 model CourseSchedule {
