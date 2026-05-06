@@ -1,114 +1,244 @@
-"use client"
+import React, { Suspense } from 'react';
+import { getUserOrRedirect } from "@/lib/auth";
+import prisma from "@/lib/prisma";
+import SkeletonCard from '@/components/ui/SkeletonCard';
+import { 
+  GraduationCap, 
+  Users, 
+  Clock, 
+  Star, 
+  Plus, 
+  CheckCircle2,
+  AlertCircle,
+  QrCode,
+  ArrowRight,
+  FileText
+} from 'lucide-react';
+import Link from 'next/link';
 
-import { GraduationCap, Users, Clock, Plus, BarChart3, Settings, ExternalLink } from 'lucide-react'
-import Link from 'next/link'
+async function LecturerHomeContent() {
+  const { dbUser } = await getUserOrRedirect();
 
-export default function LecturerDashboard() {
+  // 1. Active Lab Session
+  const activeSession = await prisma.labSession.findFirst({
+    where: { lecturerId: dbUser.id, active: true },
+    include: {
+      _count: {
+        select: { attendances: true }
+      }
+    }
+  });
+
+  // 2. Office Hours Queue
+  const queueItems = await prisma.officeHourQueue.findMany({
+    where: { lecturerId: dbUser.id, status: 'WAITING' },
+    orderBy: { createdAt: 'asc' }
+  });
+
+  // 3. Evaluations average
+  const evaluations = await prisma.evaluation.findMany({
+    // In a real app, join with courses where lecturer is owner
+    take: 10
+  });
+
+  const avgScore = evaluations.length > 0 
+    ? (evaluations.reduce((acc, curr) => acc + curr.contentScore, 0) / evaluations.length).toFixed(1)
+    : 'N/A';
+
+  // 4. Pending Grading
+  const assignments = await prisma.assignment.findMany({
+    where: { lecturerId: dbUser.id }
+  });
+
+  const pendingGradingCount = await prisma.submission.count({
+    where: { 
+      assignmentId: { in: assignments.map(a => a.id) },
+      score: null
+    }
+  });
+
   return (
-    <div className="max-w-7xl mx-auto space-y-10 pb-20">
-      {/* Welcome Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div>
-          <h1 className="text-4xl font-black text-slate-900 tracking-tight">Lecturer Control Panel</h1>
-          <p className="text-slate-500 font-medium mt-1">Manage your courses, students, and active sessions.</p>
-        </div>
-        <div className="flex items-center gap-4">
-          <Link href="/lecturer/attendance" className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-2xl font-black shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all">
-            <Plus size={20} />
-            New Lab Session
-          </Link>
-        </div>
-      </div>
-
-      {/* Action Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        {[
-          { title: 'Total Students', value: '412', icon: Users, color: 'text-indigo-600', bg: 'bg-indigo-50' },
-          { title: 'Active Labs', value: '3', icon: GraduationCap, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-          { title: 'Queue Length', value: '8', icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50' },
-          { title: 'Average Score', value: '74%', icon: BarChart3, color: 'text-rose-600', bg: 'bg-rose-50' }
-        ].map((stat, i) => (
-          <div key={i} className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm">
-            <div className={`w-12 h-12 ${stat.bg} ${stat.color} rounded-2xl flex items-center justify-center mb-4`}>
-              <stat.icon size={24} />
+    <div className="space-y-8 animate-in fade-in duration-500">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Active Lab Session Card */}
+        <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden flex flex-col">
+          <div className="p-6 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-indigo-100 text-indigo-600 rounded-lg">
+                <GraduationCap size={20} />
+              </div>
+              <h3 className="font-bold text-slate-800">Active Lab Session</h3>
             </div>
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">{stat.title}</p>
-            <p className="text-2xl font-black text-slate-900">{stat.value}</p>
+            {activeSession && (
+              <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">
+                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                Live
+              </span>
+            )}
           </div>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <div className="lg:col-span-8 space-y-8">
-          {/* Active Sessions */}
-          <div className="bg-white rounded-[40px] border border-slate-100 shadow-xl overflow-hidden">
-            <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-              <h3 className="text-xl font-black text-slate-900">Active Lab Sessions</h3>
-              <Link href="/lecturer/attendance" className="text-xs font-black uppercase tracking-widest text-indigo-600 hover:underline">Manage All</Link>
-            </div>
-            <div className="p-6">
-              <div className="space-y-4">
-                {[
-                  { course: 'CS101', section: 'Lab B', code: '849 201', time: 'Ends in 45m' },
-                  { course: 'CS101', section: 'Lab A', code: 'EXPIRED', time: 'Completed' }
-                ].map((lab, i) => (
-                  <div key={i} className="flex items-center justify-between p-6 bg-slate-50 rounded-3xl border border-slate-100">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm text-indigo-600">
-                        <GraduationCap size={24} />
-                      </div>
-                      <div>
-                        <p className="font-bold text-slate-800">{lab.course} - {lab.section}</p>
-                        <p className="text-xs text-slate-400 font-medium">{lab.time}</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Access Code</p>
-                      <p className={`text-xl font-black ${lab.code === 'EXPIRED' ? 'text-slate-300' : 'text-indigo-600'}`}>{lab.code}</p>
+          
+          <div className="p-8 flex-1">
+            {activeSession ? (
+              <div className="flex flex-col md:flex-row gap-8 items-center">
+                <div className="flex-1 space-y-4">
+                  <div>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Access Code</p>
+                    <p className="text-4xl font-black text-indigo-600 tracking-tighter">{activeSession.code}</p>
+                  </div>
+                  <div className="flex items-center gap-6">
+                    <div>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Attendance</p>
+                      <p className="text-xl font-bold text-slate-800">{activeSession._count.attendances} Joined</p>
                     </div>
                   </div>
-                ))}
+                  <Link href="/lecturer/attendance" className="inline-flex items-center gap-2 text-sm font-bold text-indigo-600 hover:gap-3 transition-all mt-2">
+                    Manage Session <ArrowRight size={16} />
+                  </Link>
+                </div>
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 shadow-inner">
+                  {activeSession.qrCode ? (
+                    <img src={activeSession.qrCode} alt="QR" className="w-24 h-24" />
+                  ) : (
+                    <div className="w-24 h-24 bg-white flex items-center justify-center text-slate-300">
+                      <QrCode size={40} />
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          </div>
-
-          {/* Quick Shortcuts */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-indigo-600 rounded-[40px] p-8 text-white shadow-xl shadow-indigo-100 relative overflow-hidden group cursor-pointer">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-8 translate-x-8 blur-2xl group-hover:scale-150 transition-transform" />
-              <h3 className="text-2xl font-black mb-2">Office Hours</h3>
-              <p className="text-indigo-100 mb-6 text-sm font-medium">Open your queue to start meeting with students.</p>
-              <Link href="/lecturer/office-hours" className="inline-flex items-center gap-2 px-6 py-3 bg-white text-indigo-600 rounded-xl font-black text-xs">
-                Open Queue <ExternalLink size={14} />
-              </Link>
-            </div>
-            
-            <div className="bg-slate-900 rounded-[40px] p-8 text-white shadow-xl relative overflow-hidden group cursor-pointer">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/20 rounded-full -translate-y-8 translate-x-8 blur-2xl group-hover:scale-150 transition-transform" />
-              <h3 className="text-2xl font-black mb-2">Evaluations</h3>
-              <p className="text-slate-400 mb-6 text-sm font-medium">Review anonymous feedback from your courses.</p>
-              <Link href="/lecturer/evaluations" className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl font-black text-xs">
-                View Feedback <BarChart3 size={14} />
-              </Link>
-            </div>
+            ) : (
+              <div className="h-full flex flex-col items-center justify-center text-center py-4">
+                <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center text-slate-300 mb-4">
+                  <GraduationCap size={32} />
+                </div>
+                <h4 className="font-bold text-slate-800">No active lab sessions</h4>
+                <p className="text-slate-500 text-xs mt-1 max-w-[200px]">Start a new session to begin tracking attendance.</p>
+                <Link href="/lecturer/attendance" className="mt-6 px-6 py-2.5 bg-indigo-600 text-white text-sm font-bold rounded-xl shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all flex items-center gap-2">
+                  <Plus size={18} /> Start Session
+                </Link>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Sidebar */}
-        <div className="lg:col-span-4 space-y-8">
-          <div className="bg-white rounded-[40px] p-8 border border-slate-100 shadow-xl">
-            <h3 className="text-xl font-black text-slate-900 mb-6 flex items-center gap-2">
-              <Settings size={24} className="text-slate-400" />
-              Settings
-            </h3>
-            <div className="space-y-4">
-              <button className="w-full text-left p-4 hover:bg-slate-50 rounded-2xl transition-all font-bold text-slate-700 text-sm">Course Management</button>
-              <button className="w-full text-left p-4 hover:bg-slate-50 rounded-2xl transition-all font-bold text-slate-700 text-sm">Notification Preferences</button>
-              <button className="w-full text-left p-4 hover:bg-slate-50 rounded-2xl transition-all font-bold text-slate-700 text-sm">Office Hour Availability</button>
+        {/* Office Hours Queue Card */}
+        <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden flex flex-col">
+          <div className="p-6 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-amber-100 text-amber-600 rounded-lg">
+                <Clock size={20} />
+              </div>
+              <h3 className="font-bold text-slate-800">Office Hours Queue</h3>
             </div>
+            <span className="text-xs font-bold text-slate-400">{queueItems.length} Waiting</span>
+          </div>
+
+          <div className="p-8 flex-1">
+            {queueItems.length > 0 ? (
+              <div className="space-y-6">
+                <div className="bg-amber-50 border border-amber-100 p-4 rounded-2xl">
+                  <p className="text-[10px] font-bold text-amber-700 uppercase tracking-widest mb-1">Up Next</p>
+                  <p className="text-sm font-bold text-slate-800 line-clamp-1">{queueItems[0].topic}</p>
+                  <p className="text-[10px] text-amber-600 mt-1">Submitted {new Date(queueItems[0].createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                </div>
+                
+                <div className="flex gap-3">
+                  <Link href="/lecturer/office-hours" className="flex-1 py-3 bg-slate-900 text-white text-sm font-bold rounded-xl text-center hover:bg-slate-800 transition-all">
+                    Admit Next
+                  </Link>
+                  <Link href="/lecturer/office-hours" className="px-4 py-3 bg-slate-100 text-slate-600 text-sm font-bold rounded-xl hover:bg-slate-200 transition-all">
+                    View All
+                  </Link>
+                </div>
+              </div>
+            ) : (
+              <div className="h-full flex flex-col items-center justify-center text-center py-4">
+                <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center text-slate-300 mb-4">
+                  <Users size={32} />
+                </div>
+                <h4 className="font-bold text-slate-800">Queue is empty</h4>
+                <p className="text-slate-500 text-xs mt-1 max-w-[200px]">No students are currently waiting for office hours.</p>
+                <Link href="/lecturer/office-hours" className="mt-6 px-6 py-2.5 bg-slate-100 text-slate-600 text-sm font-bold rounded-xl hover:bg-slate-200 transition-all">
+                  Open Control Panel
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* Recent Evaluations */}
+        <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 flex items-center justify-between group">
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-purple-100 text-purple-600 rounded-lg group-hover:bg-purple-600 group-hover:text-white transition-colors">
+                <Star size={20} />
+              </div>
+              <h3 className="font-bold text-slate-800">Course Rating</h3>
+            </div>
+            <p className="text-4xl font-black text-slate-900">{avgScore}</p>
+            <p className="text-xs text-slate-400 mt-1 uppercase font-bold tracking-tighter">Avg. across all modules</p>
+            <Link href="/lecturer/evaluations" className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 mt-4 hover:underline">
+              Read feedback <ArrowRight size={14} />
+            </Link>
+          </div>
+          <div className="w-24 h-12 flex items-end gap-1 px-2">
+             {[30, 45, 25, 60, 40, 75, 55].map((h, i) => (
+               <div key={i} className="flex-1 bg-indigo-100 rounded-t-sm group-hover:bg-indigo-500 transition-colors" style={{ height: `${h}%` }} />
+             ))}
+          </div>
+        </div>
+
+        {/* Pending Grading */}
+        <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 flex items-center justify-between group">
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-rose-100 text-rose-600 rounded-lg group-hover:bg-rose-600 group-hover:text-white transition-colors">
+                <FileText size={20} />
+              </div>
+              <h3 className="font-bold text-slate-800">Pending Grading</h3>
+            </div>
+            <p className="text-4xl font-black text-slate-900">{pendingGradingCount}</p>
+            <p className="text-xs text-slate-400 mt-1 uppercase font-bold tracking-tighter">Ungraded submissions</p>
+            <Link href="/lecturer/grades" className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 mt-4 hover:underline">
+              Go to Gradebook <ArrowRight size={14} />
+            </Link>
+          </div>
+          <div className="p-4 bg-slate-50 rounded-2xl group-hover:bg-rose-50 transition-colors">
+             <AlertCircle size={32} className="text-slate-200 group-hover:text-rose-200 transition-colors" />
           </div>
         </div>
       </div>
     </div>
-  )
+  );
+}
+
+function LecturerDashboardSkeleton() {
+  return (
+    <div className="space-y-8 animate-pulse">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="h-64 bg-white rounded-3xl border border-slate-100 shadow-sm" />
+        <div className="h-64 bg-white rounded-3xl border border-slate-100 shadow-sm" />
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <SkeletonCard />
+        <SkeletonCard />
+      </div>
+    </div>
+  );
+}
+
+export default async function LecturerPage() {
+  return (
+    <div className="space-y-8 pb-10">
+      <header>
+        <h1 className="text-3xl font-black text-slate-900 tracking-tight">Lecturer Control Panel</h1>
+        <p className="text-slate-500 font-medium">Coordinate your labs, manage student queues, and track feedback.</p>
+      </header>
+
+      <Suspense fallback={<LecturerDashboardSkeleton />}>
+        <LecturerHomeContent />
+      </Suspense>
+    </div>
+  );
 }

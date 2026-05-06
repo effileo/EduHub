@@ -1,141 +1,293 @@
-"use client"
+import React, { Suspense } from 'react';
+import { getUserOrRedirect } from "@/lib/auth";
+import prisma from "@/lib/prisma";
+import SkeletonCard from '@/components/ui/SkeletonCard';
+import { 
+  GraduationCap, 
+  Users, 
+  Clock, 
+  AlertCircle, 
+  Calendar, 
+  CheckCircle2, 
+  ClipboardList,
+  ChevronRight,
+  MessageSquare
+} from 'lucide-react';
+import Link from 'next/link';
 
-import { GraduationCap, Users, Clock, AlertCircle, BookOpen, Sparkles, Calendar } from 'lucide-react'
-import Link from 'next/link'
+async function StudentHomeContent() {
+  const { dbUser } = await getUserOrRedirect();
 
-export default function StudentDashboard() {
+  // 1. Fetch Summary Data
+  const enrollments = await prisma.enrollment.findMany({
+    where: { userId: dbUser.id },
+    include: {
+      course: {
+        include: {
+          _count: {
+            select: { enrollments: true }
+          }
+        }
+      }
+    }
+  });
+
+  const courseIds = enrollments.map(e => e.courseId);
+
+  // Attendance Logic
+  const allSessions = await prisma.labSession.findMany({
+    where: { courseId: { in: courseIds } }
+  });
+  
+  const myAttendances = await prisma.attendance.findMany({
+    where: { 
+      studentId: dbUser.id,
+      labSessionId: { in: allSessions.map(s => s.id) }
+    }
+  });
+
+  const overallAttendance = allSessions.length > 0 
+    ? Math.round((myAttendances.length / allSessions.length) * 100) 
+    : 100;
+
+  // Pending Assignments
+  const allAssignments = await prisma.assignment.findMany({
+    where: { courseId: { in: courseIds } }
+  });
+
+  const mySubmissions = await prisma.submission.findMany({
+    where: { studentId: dbUser.id }
+  });
+
+  const pendingAssignmentsCount = allAssignments.length - mySubmissions.length;
+
+  // Queue Position
+  const queueEntry = await prisma.officeHourQueue.findFirst({
+    where: { studentId: dbUser.id, status: 'WAITING' },
+    orderBy: { createdAt: 'asc' }
+  });
+
+  // 2. Upcoming Deadlines (next 3)
+  const upcomingDeadlines = await prisma.assignment.findMany({
+    where: { 
+      courseId: { in: courseIds },
+      dueDate: { gt: new Date() }
+    },
+    orderBy: { dueDate: 'asc' },
+    take: 3
+  });
+
+  // 3. Study Groups
+  const studyGroups = await prisma.studyGroup.findMany({
+    where: { 
+      members: { some: { userId: dbUser.id } }
+    },
+    include: {
+      messages: {
+        orderBy: { createdAt: 'desc' },
+        take: 1
+      },
+      _count: {
+        select: { members: true }
+      }
+    },
+    take: 3
+  });
+
+  // 4. Available Office Hours (Lecturers with active sessions or queues)
+  // For simplicity, we fetch all lecturers for the courses
+  const lecturers = await prisma.user.findMany({
+    where: { role: 'LECTURER' }, // In a real app, filter by course
+    take: 3
+  });
+
+  // 5. Attendance Risk calculation
+  const attendanceRisks = [];
+  for (const courseId of courseIds) {
+    const courseSessions = allSessions.filter(s => s.courseId === courseId);
+    const courseAttendances = myAttendances.filter(a => courseSessions.some(cs => cs.id === a.labSessionId));
+    const rate = courseSessions.length > 0 ? (courseAttendances.length / courseSessions.length) * 100 : 100;
+    
+    if (rate < 75) {
+      const courseName = enrollments.find(e => e.courseId === courseId)?.course.name;
+      attendanceRisks.push({ courseName, rate: Math.round(rate) });
+    }
+  }
+
   return (
-    <div className="max-w-7xl mx-auto space-y-10 pb-20">
-      {/* Welcome Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div>
-          <h1 className="text-4xl font-black text-slate-900 tracking-tight">Welcome back, Student!</h1>
-          <p className="text-slate-500 font-medium mt-1">Here is what's happening in your courses today.</p>
-        </div>
-        <div className="flex items-center gap-3 bg-white p-2 rounded-2xl border border-slate-100 shadow-sm">
-          <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center">
-            <Calendar size={20} />
-          </div>
-          <div className="pr-4">
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Next Class</p>
-            <p className="text-sm font-bold text-slate-700">CS101 @ 2:00 PM</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Quick Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Link href="/student/attendance" className="bg-white p-8 rounded-[40px] border border-slate-100 shadow-xl hover:shadow-2xl transition-all group">
-          <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-indigo-600 group-hover:text-white transition-all">
-            <GraduationCap size={28} />
-          </div>
-          <h3 className="text-xl font-black text-slate-900 mb-1">Attendance</h3>
-          <p className="text-slate-500 font-medium">92% Overall Presence</p>
-        </Link>
-
-        <Link href="/student/study-groups" className="bg-white p-8 rounded-[40px] border border-slate-100 shadow-xl hover:shadow-2xl transition-all group">
-          <div className="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-emerald-600 group-hover:text-white transition-all">
-            <Users size={28} />
-          </div>
-          <h3 className="text-xl font-black text-slate-900 mb-1">Study Groups</h3>
-          <p className="text-slate-500 font-medium">3 Active Groups</p>
-        </Link>
-
-        <Link href="/student/office-hours" className="bg-white p-8 rounded-[40px] border border-slate-100 shadow-xl hover:shadow-2xl transition-all group">
-          <div className="w-14 h-14 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-amber-600 group-hover:text-white transition-all">
-            <Clock size={28} />
-          </div>
-          <h3 className="text-xl font-black text-slate-900 mb-1">Office Hours</h3>
-          <p className="text-slate-500 font-medium">1 Professor Online</p>
-        </Link>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Main Content Area */}
-        <div className="lg:col-span-8 space-y-8">
-          <div className="bg-slate-900 rounded-[48px] p-10 text-white relative overflow-hidden shadow-2xl">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/20 rounded-full blur-[80px]" />
-            <div className="relative z-10">
-              <div className="flex items-center gap-2 mb-6">
-                <Sparkles size={20} className="text-indigo-400" />
-                <span className="text-xs font-black uppercase tracking-widest text-indigo-400">AI Assistant Tip</span>
-              </div>
-              <h2 className="text-3xl font-black mb-4 leading-tight">Need help with CS101 exam prep?</h2>
-              <p className="text-slate-400 font-medium mb-8 max-w-lg">
-                Your AI Study Assistant has indexed the last 3 weeks of lecture notes. Try asking: "Summarize the key concepts of recursion."
-              </p>
-              <Link href="/courses/CS101/assistant" className="inline-flex items-center gap-2 px-8 py-4 bg-white text-slate-900 rounded-2xl font-black hover:bg-indigo-50 transition-all shadow-lg">
-                Ask Assistant →
-              </Link>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-[40px] border border-slate-100 shadow-xl overflow-hidden">
-            <div className="p-8 border-b border-slate-100 flex justify-between items-center">
-              <h3 className="text-xl font-black text-slate-900 flex items-center gap-2">
-                <BookOpen size={24} className="text-indigo-600" />
-                Recent Resources
-              </h3>
-              <Link href="/courses/CS101/resources" className="text-xs font-black uppercase tracking-widest text-indigo-600 hover:underline">View All</Link>
-            </div>
-            <div className="p-4 space-y-2">
-              {[
-                { title: 'Lecture 12: Binary Trees', week: 'Week 6', type: 'PDF' },
-                { title: 'Homework 4: Algorithms', week: 'Week 6', type: 'DOC' },
-                { title: 'Study Guide: Midterm', week: 'Week 5', type: 'PDF' }
-              ].map((r, i) => (
-                <div key={i} className="flex items-center justify-between p-4 hover:bg-slate-50 rounded-2xl transition-colors cursor-pointer group">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-slate-50 text-slate-400 rounded-xl flex items-center justify-center group-hover:bg-white group-hover:text-indigo-600 transition-all">
-                      <BookOpen size={20} />
-                    </div>
-                    <div>
-                      <p className="font-bold text-slate-800">{r.title}</p>
-                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{r.week}</p>
-                    </div>
-                  </div>
-                  <span className="text-[10px] font-black bg-slate-100 text-slate-400 px-2 py-1 rounded-md">{r.type}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Sidebar */}
-        <div className="lg:col-span-4 space-y-8">
-          <div className="bg-white rounded-[40px] p-8 border border-slate-100 shadow-xl">
-            <h3 className="text-xl font-black text-slate-900 mb-6 flex items-center gap-2">
-              <AlertCircle size={24} className="text-red-500" />
-              Notifications
-            </h3>
-            <div className="space-y-6">
-              {[
-                { text: 'Grade released for Quiz 3', time: '2h ago' },
-                { text: 'New reply in Discussion Board', time: '5h ago' },
-                { text: 'Upcoming Lab in 30 mins', time: 'Just now' }
-              ].map((n, i) => (
-                <div key={i} className="flex gap-4">
-                  <div className="w-1 h-10 bg-indigo-600 rounded-full shrink-0" />
-                  <div>
-                    <p className="text-sm font-bold text-slate-700">{n.text}</p>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{n.time}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-          
-          <div className="bg-indigo-600 rounded-[40px] p-10 text-white shadow-xl shadow-indigo-200">
-            <h3 className="text-2xl font-black mb-2">Need Help?</h3>
-            <p className="text-indigo-100 font-medium mb-8 text-sm">
-              Visit the help center or chat with our support team for any technical issues.
+    <div className="space-y-8 animate-in fade-in duration-500">
+      {/* Priority Alerts */}
+      {attendanceRisks.length > 0 && (
+        <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-2xl shadow-sm flex items-start gap-4">
+          <AlertCircle className="text-red-500 shrink-0 mt-0.5" size={20} />
+          <div>
+            <h3 className="text-red-800 font-bold">Attendance Risk Warning</h3>
+            <p className="text-red-700 text-sm mt-1">
+              You are currently below 75% attendance in: {attendanceRisks.map(r => `${r.courseName} (${r.rate}%)`).join(', ')}. 
+              Contact your lecturers to avoid an "Incomplete (NG)" grade.
             </p>
-            <button className="w-full py-4 bg-white/20 hover:bg-white/30 rounded-2xl font-black text-sm transition-all backdrop-blur-md">
-              Open Support Ticket
-            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+          <div className="flex items-center justify-between mb-4">
+            <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
+              <ClipboardList size={20} />
+            </div>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Attendance</span>
+          </div>
+          <p className="text-3xl font-bold text-slate-900">{overallAttendance}%</p>
+          <p className="text-xs text-slate-500 mt-1">Overall presence</p>
+        </div>
+
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+          <div className="flex items-center justify-between mb-4">
+            <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
+              <GraduationCap size={20} />
+            </div>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">GPA</span>
+          </div>
+          <p className="text-3xl font-bold text-slate-900">{dbUser.gpa?.toFixed(2) || 'N/A'}</p>
+          <p className="text-xs text-slate-500 mt-1">Academic standing</p>
+        </div>
+
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+          <div className="flex items-center justify-between mb-4">
+            <div className="p-2 bg-amber-50 text-amber-600 rounded-lg">
+              <Calendar size={20} />
+            </div>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Assignments</span>
+          </div>
+          <p className="text-3xl font-bold text-slate-900">{pendingAssignmentsCount}</p>
+          <p className="text-xs text-slate-500 mt-1">Pending submissions</p>
+        </div>
+
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+          <div className="flex items-center justify-between mb-4">
+            <div className="p-2 bg-purple-50 text-purple-600 rounded-lg">
+              <Clock size={20} />
+            </div>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Office Hours</span>
+          </div>
+          <p className="text-3xl font-bold text-slate-900">{queueEntry ? `#${queueEntry.position}` : 'None'}</p>
+          <p className="text-xs text-slate-500 mt-1">Active queue position</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Upcoming Deadlines */}
+        <div className="lg:col-span-1 space-y-4">
+          <h2 className="text-lg font-bold text-slate-900 px-1">Upcoming Deadlines</h2>
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 divide-y divide-slate-50 overflow-hidden">
+            {upcomingDeadlines.length === 0 ? (
+              <div className="p-8 text-center text-slate-400 text-sm italic">No upcoming deadlines</div>
+            ) : (
+              upcomingDeadlines.map((a) => (
+                <div key={a.id} className="p-4 hover:bg-slate-50 transition-colors">
+                  <div className="flex justify-between items-start mb-1">
+                    <h4 className="font-bold text-slate-800 text-sm">{a.title}</h4>
+                    <span className="text-[10px] font-bold text-red-500 bg-red-50 px-2 py-0.5 rounded-full">
+                      {new Date(a.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 truncate">{a.courseId}</p>
+                </div>
+              ))
+            )}
+            <Link href="/student/grades" className="block p-3 text-center text-xs font-bold text-indigo-600 hover:bg-indigo-50 transition-colors">
+              View All Assignments
+            </Link>
+          </div>
+        </div>
+
+        {/* My Study Groups */}
+        <div className="lg:col-span-1 space-y-4">
+          <h2 className="text-lg font-bold text-slate-900 px-1">My Study Groups</h2>
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 divide-y divide-slate-50 overflow-hidden">
+            {studyGroups.length === 0 ? (
+              <div className="p-8 text-center text-slate-400 text-sm italic">You haven't joined any groups</div>
+            ) : (
+              studyGroups.map((g) => (
+                <div key={g.id} className="p-4 hover:bg-slate-50 transition-colors cursor-pointer">
+                  <div className="flex justify-between items-center mb-1">
+                    <h4 className="font-bold text-slate-800 text-sm">{g.title}</h4>
+                    <span className="text-[10px] text-slate-400">{g._count.members} members</span>
+                  </div>
+                  <p className="text-xs text-slate-500 truncate italic">
+                    {g.messages[0] ? `"${g.messages[0].body}"` : 'No messages yet'}
+                  </p>
+                </div>
+              ))
+            )}
+            <Link href="/student/study-groups" className="block p-3 text-center text-xs font-bold text-indigo-600 hover:bg-indigo-50 transition-colors">
+              Find More Groups
+            </Link>
+          </div>
+        </div>
+
+        {/* Available Office Hours */}
+        <div className="lg:col-span-1 space-y-4">
+          <h2 className="text-lg font-bold text-slate-900 px-1">Available Office Hours</h2>
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 divide-y divide-slate-50 overflow-hidden">
+            {lecturers.map((l) => (
+              <div key={l.id} className="p-4 hover:bg-slate-50 transition-colors flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <img src={l.avatar || ''} className="w-8 h-8 rounded-full bg-slate-100" alt={l.name} />
+                  <div>
+                    <h4 className="font-bold text-slate-800 text-sm">{l.name}</h4>
+                    <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-tighter flex items-center">
+                      <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-1.5 animate-pulse" />
+                      Live Now
+                    </p>
+                  </div>
+                </div>
+                <Link href="/student/office-hours" className="p-1.5 text-slate-400 hover:text-indigo-600 transition-colors">
+                  <ChevronRight size={18} />
+                </Link>
+              </div>
+            ))}
+            <Link href="/student/office-hours" className="block p-3 text-center text-xs font-bold text-indigo-600 hover:bg-indigo-50 transition-colors">
+              Full Schedule
+            </Link>
           </div>
         </div>
       </div>
     </div>
-  )
+  );
+}
+
+function StudentDashboardSkeleton() {
+  return (
+    <div className="space-y-8 animate-pulse">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <SkeletonCard />
+        <SkeletonCard />
+        <SkeletonCard />
+        <SkeletonCard />
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="h-64 bg-white rounded-2xl border border-slate-100 shadow-sm" />
+        <div className="h-64 bg-white rounded-2xl border border-slate-100 shadow-sm" />
+        <div className="h-64 bg-white rounded-2xl border border-slate-100 shadow-sm" />
+      </div>
+    </div>
+  );
+}
+
+export default async function StudentPage() {
+  return (
+    <div className="space-y-8 pb-10">
+      <header>
+        <h1 className="text-3xl font-black text-slate-900 tracking-tight">Academic Overview</h1>
+        <p className="text-slate-500 font-medium">Manage your progress, deadlines, and collaborations.</p>
+      </header>
+
+      <Suspense fallback={<StudentDashboardSkeleton />}>
+        <StudentHomeContent />
+      </Suspense>
+    </div>
+  );
 }
