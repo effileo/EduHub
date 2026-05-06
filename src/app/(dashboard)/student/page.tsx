@@ -1,6 +1,8 @@
 import React, { Suspense } from 'react';
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
 import { getUserOrRedirect } from "@/lib/auth";
-import prisma from "@/lib/prisma";
+// import prisma from "@/lib/prisma";
 import SkeletonCard from '@/components/ui/SkeletonCard';
 import { 
   GraduationCap, 
@@ -19,7 +21,11 @@ async function StudentHomeContent() {
   const { dbUser } = await getUserOrRedirect();
 
   // 1. Fetch Summary Data
-  const enrollments = await prisma.enrollment.findMany({
+  // Test if course model works
+  const coursesTest = await (prisma as any).course.findMany({});
+  console.log("Courses found:", coursesTest.length);
+
+  const enrollments = await (prisma as any).enrollment.findMany({
     where: { userId: dbUser.id },
     include: {
       course: {

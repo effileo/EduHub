@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import WeekGrid from '@/components/timetable/WeekGrid'
-import { Calendar, Download, ChevronLeft, ChevronRight, Clock, MapPin, Loader2 } from 'lucide-react'
+import { Calendar, Download, ChevronLeft, ChevronRight, Clock, MapPin, Loader2, BookOpen } from 'lucide-react'
 import { format, addDays, startOfWeek } from 'date-fns'
 
 export default function StudentTimetablePage() {

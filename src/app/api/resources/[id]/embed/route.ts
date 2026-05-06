@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getUser } from '@/lib/auth'
 import prisma from '@/lib/prisma'
 import { createClient } from '@/lib/supabase/server'
-import pdf from 'pdf-parse'
+import pdf from 'pdf-parse/lib/pdf-parse.js'
 import { embedAndStore } from '@/lib/embeddings'
 
 export async function POST(
